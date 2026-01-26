@@ -329,7 +329,7 @@
         <div class="header">
             <div class="header-left">
                 <h1>Hyperliquid 청산 지도</h1>
-                <p>Top 100 트레이더 기준 청산 가격 분포</p>
+                <p>Top 200 트레이더 기준 청산 가격 분포</p>
             </div>
             <div class="header-right">
                 <select class="coin-selector" id="coin-selector" onchange="updateChart()">
@@ -435,7 +435,7 @@
         </div>
 
         <div class="last-updated" id="last-updated"></div>
-        <div class="disclaimer">* Top 100 트레이더 기준 데이터로, 전체 시장을 대표하지 않습니다.</div>
+        <div class="disclaimer">* Top 200 트레이더 기준 데이터로, 전체 시장을 대표하지 않습니다.</div>
     </div>
 
     <script>
@@ -729,17 +729,29 @@
                 if (!response.ok) throw new Error('data.json을 찾을 수 없습니다');
                 data = await response.json();
                 
-                // Populate coin selector
+                // Populate coin selector - only show coins with data
                 const selector = document.getElementById('coin-selector');
                 selector.innerHTML = '';
                 
-                data.coins.forEach((coin, index) => {
-                    const option = document.createElement('option');
-                    option.value = coin;
-                    option.textContent = coin + '/USDT';
-                    if (index === 0) option.selected = true;
-                    selector.appendChild(option);
+                let firstCoin = null;
+                data.coins.forEach((coin) => {
+                    const coinData = data.data[coin];
+                    // Only show coins that have liquidation data
+                    if (coinData && (coinData.longLiquidations?.length > 0 || coinData.shortLiquidations?.length > 0)) {
+                        const option = document.createElement('option');
+                        option.value = coin;
+                        option.textContent = coin + '/USDT';
+                        if (!firstCoin) {
+                            option.selected = true;
+                            firstCoin = coin;
+                        }
+                        selector.appendChild(option);
+                    }
                 });
+                
+                if (!firstCoin) {
+                    selector.innerHTML = '<option value="">데이터 없음</option>';
+                }
                 
                 // Update chart
                 updateChart();
