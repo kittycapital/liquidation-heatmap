@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperliquid 청산 지도</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #e4e4e7;
+            font-family: 'Noto Sans KR', sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+            color: #ffffff;
+        }
+
+        .header-left p {
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .coin-selector {
+            background: #111111;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        .coin-selector:focus {
+            outline: none;
+            border-color: #22d3ee;
+        }
+
+        .current-price {
+            background: #111111;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 8px 16px;
+            text-align: center;
+        }
+
+        .current-price-label {
+            font-size: 0.7rem;
+            color: #71717a;
+            margin-bottom: 2px;
+        }
+
+        .current-price-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #22d3ee;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .legend-title {
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #0a0a0a 0%, #111111 100%);
+            border: 1px solid #222222;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .summary-card.long {
+            border-color: #ef444444;
+        }
+
+        .summary-card.short {
+            border-color: #22c55e44;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .summary-value.long {
+            color: #ef4444;
+        }
+
+        .summary-value.short {
+            color: #22c55e;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+            border: 1px solid #222222;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Guide Section */
+        .guide-section {
+            background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+            border: 1px solid #222222;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .guide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .guide-header.expanded {
+            margin-bottom: 16px;
+        }
+
+        .guide-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-toggle {
+            color: #71717a;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .guide-content {
+            display: none;
+        }
+
+        .guide-content.show {
+            display: block;
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .guide-card {
+            background: #111111;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .guide-card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-card-content {
+            font-size: 0.75rem;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+
+        .guide-card-content strong {
+            color: #ffffff;
+        }
+
+        .guide-card-content .bullish {
+            color: #22c55e;
+        }
+
+        .guide-card-content .bearish {
+            color: #ef4444;
+        }
+
+        .last-updated {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #52525b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #71717a;
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+            color: #ef4444;
+        }
+
+        .disclaimer {
+            font-size: 0.7rem;
+            color: #52525b;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .header {
+                flex-direction: column;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .legend {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Hyperliquid 청산 지도</h1>
+                <p>Top 100 트레이더 기준 청산 가격 분포</p>
+            </div>
+            <div class="header-right">
+                <select class="coin-selector" id="coin-selector" onchange="updateChart()">
+                    <option value="">로딩 중...</option>
+                </select>
+                <div class="current-price">
+                    <div class="current-price-label">현재 가격</div>
+                    <div class="current-price-value" id="current-price">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-section">
+                <span class="legend-title">누적:</span>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #ef4444;"></div>
+                    <span>롱 청산</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #22c55e;"></div>
+                    <span>숏 청산</span>
+                </div>
+            </div>
+            <div class="legend-section">
+                <span class="legend-title">레버리지:</span>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3b82f6;"></div>
+                    <span>10x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #eab308;"></div>
+                    <span>25x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f97316;"></div>
+                    <span>50x</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ef4444;"></div>
+                    <span>100x</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card long">
+                <div class="summary-label">누적 롱 청산</div>
+                <div class="summary-value long" id="total-long">-</div>
+            </div>
+            <div class="summary-card short">
+                <div class="summary-label">누적 숏 청산</div>
+                <div class="summary-value short" id="total-short">-</div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="liquidation-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Guide Section -->
+        <div class="guide-section">
+            <div class="guide-header" id="guide-header" onclick="toggleGuide()">
+                <div class="guide-title">📊 청산 지도 활용 가이드</div>
+                <div class="guide-toggle">
+                    <span id="guide-toggle-text">펼치기</span>
+                    <svg id="guide-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="guide-content" id="guide-content">
+                <div class="guide-grid">
+                    <div class="guide-card">
+                        <div class="guide-card-title">🔴 롱 청산 구간 (아래쪽)</div>
+                        <div class="guide-card-content">
+                            현재가 아래에 롱 청산이 쌓여있으면,<br>
+                            가격 하락 시 <strong class="bearish">연쇄 청산</strong>으로 급락 가능.<br><br>
+                            <strong>트레이딩 힌트:</strong> 롱 청산이 많은 가격대는 강한 지지선이 되거나, 뚫리면 급락 트리거가 됨.
+                        </div>
+                    </div>
+                    <div class="guide-card">
+                        <div class="guide-card-title">🟢 숏 청산 구간 (위쪽)</div>
+                        <div class="guide-card-content">
+                            현재가 위에 숏 청산이 쌓여있으면,<br>
+                            가격 상승 시 <strong class="bullish">숏 스퀴즈</strong>로 급등 가능.<br><br>
+                            <strong>트레이딩 힌트:</strong> 숏 청산이 많은 가격대는 저항선이 되거나, 뚫리면 급등 트리거가 됨.
+                        </div>
+                    </div>
+                    <div class="guide-card">
+                        <div class="guide-card-title">📈 레버리지 색상</div>
+                        <div class="guide-card-content">
+                            <strong style="color:#3b82f6">■ 10x</strong> - 낮은 레버리지 (안정적)<br>
+                            <strong style="color:#eab308">■ 25x</strong> - 중간 레버리지<br>
+                            <strong style="color:#f97316">■ 50x</strong> - 높은 레버리지<br>
+                            <strong style="color:#ef4444">■ 100x</strong> - 극단적 레버리지 (변동성 취약)
+                        </div>
+                    </div>
+                    <div class="guide-card">
+                        <div class="guide-card-title">💡 활용 팁</div>
+                        <div class="guide-card-content">
+                            • <strong>청산 밀집 구간</strong>: 가격 도달 시 급격한 움직임 예상<br>
+                            • <strong>누적 라인</strong>: 어느 방향에 더 많은 청산이 있는지 파악<br>
+                            • <strong>고레버리지</strong>: 작은 가격 변동에도 청산 발생
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated" id="last-updated"></div>
+        <div class="disclaimer">* Top 100 트레이더 기준 데이터로, 전체 시장을 대표하지 않습니다.</div>
+    </div>
+
+    <script>
+        let data = null;
+        let chart = null;
+        let guideExpanded = false;
+
+        function toggleGuide() {
+            guideExpanded = !guideExpanded;
+            const content = document.getElementById('guide-content');
+            const header = document.getElementById('guide-header');
+            const toggleText = document.getElementById('guide-toggle-text');
+            const arrow = document.getElementById('guide-arrow');
+            
+            if (guideExpanded) {
+                content.classList.add('show');
+                header.classList.add('expanded');
+                toggleText.textContent = '접기';
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.remove('show');
+                header.classList.remove('expanded');
+                toggleText.textContent = '펼치기';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function formatCurrency(value) {
+            const num = parseFloat(value) || 0;
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return '$' + (num / 1e3).toFixed(1) + 'K';
+            return '$' + num.toFixed(0);
+        }
+
+        function formatPrice(value, coin) {
+            const num = parseFloat(value) || 0;
+            if (coin === 'PEPE' || num < 0.001) return '$' + num.toFixed(8);
+            if (num < 1) return '$' + num.toFixed(4);
+            if (num < 100) return '$' + num.toFixed(2);
+            return '$' + num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function updateChart() {
+            const selector = document.getElementById('coin-selector');
+            const selectedCoin = selector.value;
+            
+            if (!data || !selectedCoin || !data.data[selectedCoin]) return;
+            
+            const coinData = data.data[selectedCoin];
+            
+            // Update current price
+            document.getElementById('current-price').textContent = formatPrice(coinData.currentPrice, selectedCoin);
+            
+            // Update totals
+            document.getElementById('total-long').textContent = formatCurrency(coinData.totalLongValue);
+            document.getElementById('total-short').textContent = formatCurrency(coinData.totalShortValue);
+            
+            // Prepare chart data
+            const longData = coinData.longLiquidations || [];
+            const shortData = coinData.shortLiquidations || [];
+            
+            // Merge and sort all prices
+            const allPrices = [...new Set([
+                ...longData.map(d => d.price),
+                ...shortData.map(d => d.price)
+            ])].sort((a, b) => a - b);
+            
+            // Create lookup maps
+            const longMap = {};
+            const shortMap = {};
+            longData.forEach(d => longMap[d.price] = d);
+            shortData.forEach(d => shortMap[d.price] = d);
+            
+            // Build datasets
+            const labels = allPrices.map(p => formatPrice(p, selectedCoin));
+            
+            // Stacked bar data for long (negative values for display below axis)
+            const long10x = allPrices.map(p => longMap[p] ? -longMap[p]['10x'] : 0);
+            const long25x = allPrices.map(p => longMap[p] ? -longMap[p]['25x'] : 0);
+            const long50x = allPrices.map(p => longMap[p] ? -longMap[p]['50x'] : 0);
+            const long100x = allPrices.map(p => longMap[p] ? -longMap[p]['100x'] : 0);
+            
+            // Stacked bar data for short (positive values)
+            const short10x = allPrices.map(p => shortMap[p] ? shortMap[p]['10x'] : 0);
+            const short25x = allPrices.map(p => shortMap[p] ? shortMap[p]['25x'] : 0);
+            const short50x = allPrices.map(p => shortMap[p] ? shortMap[p]['50x'] : 0);
+            const short100x = allPrices.map(p => shortMap[p] ? shortMap[p]['100x'] : 0);
+            
+            // Cumulative lines
+            let cumLong = 0;
+            const cumulativeLong = allPrices.map(p => {
+                if (longMap[p]) cumLong += longMap[p].value;
+                return -cumLong;
+            });
+            
+            let cumShort = 0;
+            const cumulativeShort = allPrices.map(p => {
+                if (shortMap[p]) cumShort += shortMap[p].value;
+                return cumShort;
+            });
+            
+            // Find current price index for annotation
+            const currentPrice = coinData.currentPrice;
+            let currentPriceIndex = allPrices.findIndex(p => p >= currentPrice);
+            if (currentPriceIndex === -1) currentPriceIndex = allPrices.length - 1;
+            
+            // Destroy existing chart
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = document.getElementById('liquidation-chart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        // Long liquidations (stacked, negative)
+                        {
+                            label: 'Long 10x',
+                            data: long10x,
+                            backgroundColor: '#3b82f680',
+                            stack: 'long',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Long 25x',
+                            data: long25x,
+                            backgroundColor: '#eab30880',
+                            stack: 'long',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Long 50x',
+                            data: long50x,
+                            backgroundColor: '#f9731680',
+                            stack: 'long',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Long 100x',
+                            data: long100x,
+                            backgroundColor: '#ef444480',
+                            stack: 'long',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        // Short liquidations (stacked, positive)
+                        {
+                            label: 'Short 10x',
+                            data: short10x,
+                            backgroundColor: '#3b82f680',
+                            stack: 'short',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Short 25x',
+                            data: short25x,
+                            backgroundColor: '#eab30880',
+                            stack: 'short',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Short 50x',
+                            data: short50x,
+                            backgroundColor: '#f9731680',
+                            stack: 'short',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        {
+                            label: 'Short 100x',
+                            data: short100x,
+                            backgroundColor: '#ef444480',
+                            stack: 'short',
+                            barPercentage: 1,
+                            categoryPercentage: 1
+                        },
+                        // Cumulative lines
+                        {
+                            label: '누적 롱 청산',
+                            data: cumulativeLong,
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: '누적 숏 청산',
+                            data: cumulativeShort,
+                            type: 'line',
+                            borderColor: '#22c55e',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) {
+                                    return '가격: ' + items[0].label;
+                                },
+                                label: function(context) {
+                                    const value = Math.abs(context.raw);
+                                    if (value === 0) return null;
+                                    return context.dataset.label + ': ' + formatCurrency(value);
+                                }
+                            },
+                            filter: function(item) {
+                                return item.raw !== 0;
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                currentPriceLine: {
+                                    type: 'line',
+                                    xMin: currentPriceIndex,
+                                    xMax: currentPriceIndex,
+                                    borderColor: '#22d3ee',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        display: true,
+                                        content: '현재가',
+                                        position: 'start',
+                                        backgroundColor: '#22d3ee',
+                                        color: '#000',
+                                        font: { size: 10 }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                color: '#222222'
+                            },
+                            ticks: {
+                                color: '#71717a',
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 15
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            position: 'left',
+                            grid: {
+                                color: '#222222'
+                            },
+                            ticks: {
+                                color: '#71717a',
+                                callback: function(value) {
+                                    return formatCurrency(Math.abs(value));
+                                }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                color: '#71717a',
+                                callback: function(value) {
+                                    return formatCurrency(Math.abs(value));
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'currentPriceLine',
+                    afterDraw: function(chart) {
+                        const ctx = chart.ctx;
+                        const xAxis = chart.scales.x;
+                        const yAxis = chart.scales.y;
+                        
+                        const x = xAxis.getPixelForValue(currentPriceIndex);
+                        
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeStyle = '#22d3ee';
+                        ctx.lineWidth = 2;
+                        ctx.moveTo(x, yAxis.top);
+                        ctx.lineTo(x, yAxis.bottom);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) throw new Error('data.json을 찾을 수 없습니다');
+                data = await response.json();
+                
+                // Populate coin selector
+                const selector = document.getElementById('coin-selector');
+                selector.innerHTML = '';
+                
+                data.coins.forEach((coin, index) => {
+                    const option = document.createElement('option');
+                    option.value = coin;
+                    option.textContent = coin + '/USDT';
+                    if (index === 0) option.selected = true;
+                    selector.appendChild(option);
+                });
+                
+                // Update chart
+                updateChart();
+                
+                // Update timestamp
+                if (data.lastUpdated) {
+                    const date = new Date(data.lastUpdated);
+                    document.getElementById('last-updated').textContent = 
+                        `마지막 업데이트: ${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} (${data.tradersCount || 0}명 트레이더)`;
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.querySelector('.chart-wrapper').innerHTML = 
+                    `<div class="error">데이터 로딩 실패: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
