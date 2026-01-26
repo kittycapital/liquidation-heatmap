@@ -345,17 +345,6 @@
         <!-- Legend -->
         <div class="legend">
             <div class="legend-section">
-                <span class="legend-title">누적:</span>
-                <div class="legend-item">
-                    <div class="legend-line" style="background: #ef4444;"></div>
-                    <span>롱 청산</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-line" style="background: #22c55e;"></div>
-                    <span>숏 청산</span>
-                </div>
-            </div>
-            <div class="legend-section">
                 <span class="legend-title">레버리지:</span>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #3b82f6;"></div>
@@ -632,29 +621,7 @@
                             barPercentage: 1,
                             categoryPercentage: 1
                         },
-                        // Cumulative lines
-                        {
-                            label: '누적 롱 청산',
-                            data: cumulativeLong,
-                            type: 'line',
-                            borderColor: '#ef4444',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.4,
-                            yAxisID: 'y1'
-                        },
-                        {
-                            label: '누적 숏 청산',
-                            data: cumulativeShort,
-                            type: 'line',
-                            borderColor: '#22c55e',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            tension: 0.4,
-                            yAxisID: 'y1'
-                        }
+
                     ]
                 },
                 options: {
@@ -723,18 +690,6 @@
                             position: 'left',
                             grid: {
                                 color: '#222222'
-                            },
-                            ticks: {
-                                color: '#71717a',
-                                callback: function(value) {
-                                    return formatCurrency(Math.abs(value));
-                                }
-                            }
-                        },
-                        y1: {
-                            position: 'right',
-                            grid: {
-                                drawOnChartArea: false
                             },
                             ticks: {
                                 color: '#71717a',
