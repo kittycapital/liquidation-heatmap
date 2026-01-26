@@ -51,12 +51,12 @@ def fetch_leaderboard():
         
         # Handle different response formats
         if isinstance(data, dict) and 'leaderboardRows' in data:
-            for entry in data['leaderboardRows'][:100]:
+            for entry in data['leaderboardRows'][:200]:
                 wallet = entry.get('ethAddress') or entry.get('user')
                 if wallet:
                     wallets.append(wallet)
         elif isinstance(data, list):
-            for entry in data[:100]:
+            for entry in data[:200]:
                 if isinstance(entry, dict):
                     wallet = entry.get('ethAddress') or entry.get('user') or entry.get('address')
                     if wallet:
@@ -77,7 +77,7 @@ def fetch_leaderboard():
             
             wallets = []
             if isinstance(data, list):
-                for entry in data[:100]:
+                for entry in data[:200]:
                     if isinstance(entry, dict):
                         wallet = entry.get('ethAddress') or entry.get('user')
                         if wallet:
